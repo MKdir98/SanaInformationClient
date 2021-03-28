@@ -1,2 +1,1 @@
-# SIC
-Sana Information Client
+
