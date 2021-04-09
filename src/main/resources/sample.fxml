@@ -3,17 +3,20 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<GridPane prefHeight="600.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ir.iais.sana.ui.Controller">
-    <Button fx:id="button" layoutX="50.0" layoutY="50.0" onAction="#sendData" prefHeight="26.0" prefWidth="575.0" GridPane.columnIndex="1" GridPane.rowIndex="1">ارسال اطلاعات
-    </Button>
-    <ProgressBar fx:id="progressBar" prefHeight="32.0" prefWidth="491.0" progress="0.0" />
-    <Label fx:id="label" text="Label" GridPane.rowIndex="1" />
+<GridPane prefHeight="600.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/10.0.2-internal"
+          xmlns:fx="http://javafx.com/fxml/1" fx:controller="ir.iais.sana.ui.Controller">
+    <Button fx:id="sanamaButton" layoutX="50.0" layoutY="50.0" onAction="#sendSanamaData" prefHeight="30.0" prefWidth="284.0"
+            text="ارسال اطلاعات سناما" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+    <ProgressBar fx:id="progressBar" prefHeight="32.0" prefWidth="491.0" progress="0.0"/>
+    <Label fx:id="label" text="Label" GridPane.rowIndex="1"/>
+    <Button fx:id="sanaButton" mnemonicParsing="false" prefHeight="30.0" prefWidth="286.0" text="ارسال اطلاعات سنا"
+            GridPane.columnIndex="1" onAction="#sendSanaData"/>
     <columnConstraints>
-        <ColumnConstraints maxWidth="489.0" minWidth="205.0" prefWidth="488.0" />
-        <ColumnConstraints maxWidth="568.0" minWidth="284.0" prefWidth="285.0" />
+        <ColumnConstraints maxWidth="489.0" minWidth="205.0" prefWidth="488.0"/>
+        <ColumnConstraints maxWidth="568.0" minWidth="284.0" prefWidth="285.0"/>
     </columnConstraints>
     <rowConstraints>
-        <RowConstraints />
-        <RowConstraints />
+        <RowConstraints/>
+        <RowConstraints/>
     </rowConstraints>
 </GridPane>

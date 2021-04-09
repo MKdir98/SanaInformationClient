@@ -1,100 +1,79 @@
 package ir.iais.sana.ui;
 
 import ir.iais.sana.constant.StringConstants;
-import ir.iais.sana.controller.ServicePortController;
-import ir.iais.sana.domain.SanamaInfo;
-import ir.iais.sana.service.*;
-import ir.iais.sana.util.DataUtil;
+import ir.iais.sana.controller.SanaDataController;
+import ir.iais.sana.controller.SanamaDataController;
+import ir.iais.sana.domain.service.PortConfig;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
+import javafx.scene.control.*;
 import javafx.stage.Window;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.util.List;
 
 public class Controller {
 
     private static final Logger logger = LogManager.getLogger(Controller.class);
     public ProgressBar progressBar;
     public Label label;
-    public Button button;
+    public Button sanamaButton;
+    public Button sanaButton;
 
-    public void sendData(ActionEvent actionEvent) {
-        button.setDisable(true);
+    public void sendSanamaData(ActionEvent actionEvent) {
+        sanamaButton.setDisable(true);
         try {
             Node source = (Node) actionEvent.getSource();
             Window stage = source.getScene().getWindow();
-            PushSana pushSanaPort = ServicePortController.getInstance().getPushSanaPort(stage);
+            PortConfig portConfig = getPortConfig(stage);
             final File sanamaFile = UiComponent.getInstance().
                     getFileFromUser(stage, "لطفا فایل سناما خود را انتخاب کنید.");
-            Thread convertAndSendingDataThread = createThreadForCallingService(sanamaFile, pushSanaPort);
+            Thread convertAndSendingDataThread = SanamaDataController.getInstance().
+                    createThreadForCallingService(sanamaFile, portConfig, progressBar, label, sanamaButton);
             convertAndSendingDataThread.start();
         } catch (Exception e) {
             UiComponent.getInstance().showAlert(StringConstants.ERROR_IN_SENDING_INFORMATION, "خطای داخلی رخ داده است.", Alert.AlertType.ERROR);
             logger.error(e, e);
-            button.setDisable(false);
+            sanamaButton.setDisable(false);
         }
     }
 
 
-    private Thread createThreadForCallingService(File sanamaFile, PushSana pushSanaPort) {
-        return new Thread(() -> {
-            try {
-                SanamaInfo sanamaInfo = DataUtil.getInstance().convertXmlSanamaFileToSanamaInfoObject(sanamaFile);
-                byte[] sanamaInfoBytes = DataUtil.getInstance().convertSanamaInfoObjectToArrayBytes(sanamaInfo);
-                long id = System.currentTimeMillis();
-                List<DataPart> dataParts = DataUtil.getInstance().convertSanamaInfoBytesToDataParts(sanamaInfoBytes, id);
-                long resultId = sendDataParts(id, dataParts, pushSanaPort, 0, progressBar, label);
-                UiComponent.getInstance().showAlert(StringConstants.SUCCESS_IN_SENDING_INFORMATION, resultId + "شناسه پیگیری", Alert.AlertType.INFORMATION);
-                UiComponent.getInstance().setButtonEnable(button);
-            } catch (DataTypeNotSupportedExceptionException e) {
-                UiComponent.getInstance().showAlert(StringConstants.ERROR_IN_SENDING_INFORMATION, "نوع داده ی ارسالی پشتیبانی نمی شود.", Alert.AlertType.ERROR);
-                UiComponent.getInstance().setButtonEnable(button);
-            } catch (DomainExceptionException e) {
-                UiComponent.getInstance().showAlert(StringConstants.ERROR_IN_SENDING_INFORMATION, e.getMessage(), Alert.AlertType.ERROR);
-                UiComponent.getInstance().setButtonEnable(button);
-            } catch (Exception e) {
-                UiComponent.getInstance().showAlert(StringConstants.ERROR_IN_SENDING_INFORMATION, "خطای داخلی رخ داده است.", Alert.AlertType.ERROR);
-                logger.error(e, e);
-                UiComponent.getInstance().setButtonEnable(button);
-            }
-        });
+    private PortConfig getPortConfig(Window stage) {
+        File keyPairKeyStoreFile = UiComponent.getInstance().
+                getFileFromUser(stage, "لطفا صندوق کلیدی که زوج کلید سازمان در آن قرار دارد را انتخاب کنید.");
+        String keyPairKeyStorePassword = UiComponent.getInstance().
+                showDialogAndGetText("لطفا گذرواژه صندوق کلیدی که زوج کلید سازمان در آن قرار دارد را وارد نمایید.", PasswordField.class);
+        String keyPairIdentifier = UiComponent.getInstance().
+                showDialogAndGetText("لطفا identifier زوج کلید سازمان را وارد نمایید.", TextField.class);
+        String keyPairPassword = UiComponent.getInstance().
+                showDialogAndGetText("لطفا گذرواژه زوج کلید سازمان را وارد نمایید.", PasswordField.class);
+        File certificateKeyStoreFile = UiComponent.getInstance().
+                getFileFromUser(stage, "لطفا صندوق کلیدی که گواهینامه ی بستر یکپارچه سازی تبادل اطلاعات در آن قرار دارد را انتخاب کنید.");
+        String certificateKeyStorePassword = UiComponent.getInstance().
+                showDialogAndGetText("لطفا گذرواژه صندوق کلیدی که گواهینامه ی بستر یکپارچه سازی تبادل اطلاعات در آن قرار دارد را وارد نمایید.", PasswordField.class);
+        String certificateKeyStoreIdentifier = UiComponent.getInstance().
+                showDialogAndGetText("لطفا identifier صندوق کلیدی که گواهینامه ی بستر یکپارچه سازی تبادل اطلاعات در آن قرار دارد را وارد نمایید.", TextField.class);
+        return new PortConfig(keyPairKeyStoreFile, keyPairKeyStorePassword, keyPairPassword, keyPairIdentifier,
+                certificateKeyStoreFile, certificateKeyStorePassword, certificateKeyStoreIdentifier);
     }
 
-    private long sendDataParts(long id, List<DataPart> dataParts, PushSana pushSanaPort,
-                               int index, ProgressBar progressBar, Label label)
-            throws DataTypeNotSupportedExceptionException, DomainExceptionException {
-        while (index < dataParts.size()) {
-            try {
-                index = (int) pushSanaPort.send(dataParts.get(index));
-                UiComponent.getInstance().setProgressbarValue(progressBar, index * 1.0 / dataParts.size());
-            } catch (Exception e) {
-                logger.error(e, e);
-                UiComponent.getInstance().setLabelValue(label, e.getMessage());
-            }
-        }
+    public void sendSanaData(ActionEvent actionEvent) {
+        sanaButton.setDisable(true);
         try {
-            return pushSanaPort.verify(id, dataParts.size(), DataType.SANAMA.value());
-        } catch (MisMatchIndexExceptionException e) {
-            UiComponent.getInstance().setLabelValue(label, e.getFaultInfo().getIndex() + " should be send...");
-            return sendDataParts(id, dataParts, pushSanaPort, e.getFaultInfo().getIndex(), progressBar, label);
-        } catch (DataTypeNotSupportedExceptionException | DomainExceptionException e) {
-            throw e;
+            Node source = (Node) actionEvent.getSource();
+            Window stage = source.getScene().getWindow();
+            PortConfig portConfig = getPortConfig(stage);
+            final File sanamaFile = UiComponent.getInstance().
+                    getFileFromUser(stage, "لطفا فایل سنا خود را انتخاب کنید.");
+            Thread convertAndSendingDataThread = SanaDataController.getInstance().
+                    createThreadForCallingService(sanamaFile, portConfig, progressBar, label, sanaButton);
+            convertAndSendingDataThread.start();
         } catch (Exception e) {
+            UiComponent.getInstance().showAlert(StringConstants.ERROR_IN_SENDING_INFORMATION, "خطای داخلی رخ داده است.", Alert.AlertType.ERROR);
             logger.error(e, e);
-            UiComponent.getInstance().setLabelValue(label, e.getMessage());
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-            }
-            return sendDataParts(id, dataParts, pushSanaPort, dataParts.size(), progressBar, label);
+            sanaButton.setDisable(false);
         }
     }
 }
