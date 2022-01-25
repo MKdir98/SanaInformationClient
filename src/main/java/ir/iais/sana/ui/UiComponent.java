@@ -10,6 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 public class UiComponent {
@@ -70,6 +71,8 @@ public class UiComponent {
     public File getFileFromUser(Window stage, String description) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle(description);
+        String currentPath = Paths.get(".").toAbsolutePath().normalize().toString();
+        fileChooser.setInitialDirectory(new File(currentPath));
         return fileChooser.showOpenDialog(stage);
     }
 
